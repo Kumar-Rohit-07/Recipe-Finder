@@ -1,7 +1,14 @@
+<<<<<<< HEAD
 // npm i framer-motion lucide-react
 import React, { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { UtensilsCrossed } from "lucide-react";
+=======
+// npm i framer-motion lucide-react react-router-dom
+import React, { useRef } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { Link } from "react-router-dom";
+>>>>>>> d9c4b67965e69b95efad183255ce54d026e1d447
 import Navbar from "../components/Navbar";
 
 // Images
@@ -63,8 +70,11 @@ export default function LandingPage() {
         }
       `}</style>
 
+<<<<<<< HEAD
       {/* HEADER */}
       <Header />
+=======
+>>>>>>> d9c4b67965e69b95efad183255ce54d026e1d447
       <Navbar />
 
       {/* RECIPE SCROLL SECTIONS */}
@@ -79,6 +89,7 @@ export default function LandingPage() {
   );
 }
 
+<<<<<<< HEAD
 // ---- HEADER ----
 const Header = () => (
   <motion.header
@@ -90,6 +101,8 @@ const Header = () => (
   </motion.header>
 );
 
+=======
+>>>>>>> d9c4b67965e69b95efad183255ce54d026e1d447
 // ---- SECTION ----
 const Section = ({ cat }) => {
   const ref = useRef(null);
@@ -107,15 +120,26 @@ const Section = ({ cat }) => {
       {/* Background Gradient */}
       <div className={`absolute inset-0 ${cat.bg} z-0`} />
 
+<<<<<<< HEAD
       {/* Foreground Overlay Image (opacity 27%) */}
+=======
+      {/* Foreground Overlay Image */}
+>>>>>>> d9c4b67965e69b95efad183255ce54d026e1d447
       {cat.overlay && (
         <motion.img
           src={cat.overlay}
           alt={`${cat.name} overlay`}
+<<<<<<< HEAD
           className="absolute inset-0 w-full h-full object-cover z-10 opacity-27"
           initial={{ opacity: 0, scale: 0 }}
           whileInView={{ opacity: 0.27, scale: 1 }}
           viewport={{ amount: 0.5 }}
+=======
+          className="absolute inset-0 w-full h-full object-cover z-10 opacity-30"  // ✅ fixed
+          initial={{ opacity: 0, scale: 0 }}
+          whileInView={{ opacity: 0.3, scale: 1 }}
+          viewport={{ once: false, amount: 0.5 }}
+>>>>>>> d9c4b67965e69b95efad183255ce54d026e1d447
           transition={{ duration: 0.8, ease: "easeInOut" }}
         />
       )}
@@ -126,7 +150,11 @@ const Section = ({ cat }) => {
         <motion.h1
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
+<<<<<<< HEAD
           viewport={{ amount: 0.5 }}
+=======
+          viewport={{ once: false, amount: 0.5 }}
+>>>>>>> d9c4b67965e69b95efad183255ce54d026e1d447
           transition={{ duration: 0.6 }}
           className={`absolute top-1/4 md:top-1/5 text-6xl font-extrabold tracking-wider md:text-9xl ${cat.text} opacity-30 whitespace-nowrap z-20`}
         >
@@ -139,7 +167,11 @@ const Section = ({ cat }) => {
           className="relative z-30 h-64 w-64 md:h-96 md:w-96 rounded-full overflow-hidden shadow-xl bg-transparent flex items-center justify-center"
           initial={{ opacity: 0, scale: 0.8 }}
           whileInView={{ opacity: 1, scale: 1 }}
+<<<<<<< HEAD
           viewport={{ amount: 0.5 }}
+=======
+          viewport={{ once: false, amount: 0.5 }}
+>>>>>>> d9c4b67965e69b95efad183255ce54d026e1d447
           transition={{ duration: 0.7, delay: 0.3 }}
         >
           <img
@@ -150,6 +182,7 @@ const Section = ({ cat }) => {
         </motion.div>
 
         {/* Button */}
+<<<<<<< HEAD
         <motion.button
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -159,6 +192,22 @@ const Section = ({ cat }) => {
         >
           EXPLORE NOW
         </motion.button>
+=======
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: false, amount: 0.5 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-10 z-40"
+        >
+          <Link
+            to="/card"
+            className="rounded-full border-2 border-white/60 bg-white/30 px-8 py-3 font-semibold text-white backdrop-blur-sm hover:bg-white/50 transition"
+          >
+            EXPLORE NOW
+          </Link>
+        </motion.div>
+>>>>>>> d9c4b67965e69b95efad183255ce54d026e1d447
       </div>
     </section>
   );
