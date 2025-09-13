@@ -2,3 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .bg-animate {
+    background: linear-gradient(-45deg, #ffb374, #e38b43, #bc6722, #9c5113, #833f08);
+    background-size: 400% 400%;
+    animation: bgShift 12s ease infinite;
+  }
+
+  @keyframes bgShift {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 100%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+}
