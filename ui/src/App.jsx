@@ -6,6 +6,7 @@ import LandingPage from "./pages/LandingPage";
 import Card from "./pages/Card";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import Details from "./pages/details"; // ✅ Import your details page
 
 function App() {
   return (
@@ -22,6 +23,16 @@ function App() {
             element={
               <ProtectedRoute>
                 <Card />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 🔒 Dish details page */}
+          <Route
+            path="/meal/:id"
+            element={
+              <ProtectedRoute>
+                <Details />
               </ProtectedRoute>
             }
           />

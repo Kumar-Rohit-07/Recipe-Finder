@@ -13,14 +13,14 @@ const Card = () => {
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false); // ✅ for profile
+  const [menuOpen, setMenuOpen] = useState(false); // ✅ for menu
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     const fetchMeals = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/meals/${category}`);
+        const res = await axios.get(`http://localhost:5000/api/meals/category/${category}`);
         setMeals(res.data.meals);
       } catch (err) {
         setError("Failed to load meals");
@@ -66,15 +66,33 @@ const Card = () => {
             />
           </div>
 
-          {/* ✅ Right Section (MENU first, then Auth/Profile) */}
+          {/* ✅ Right Section */}
           <div className="flex items-center gap-2">
-            {/* Drawer Button */}
-            <button
-              onClick={() => setIsDrawerOpen(true)}
-              className="m-3 bg-white/20 text-white px-5 py-2 rounded-lg shadow-md hover:bg-white/30 transition-duration-300"
-            >
-              MENU
-            </button>
+            {/* MENU Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="m-3 bg-white/20 text-white px-5 py-1.5 rounded-lg shadow-md hover:bg-white/30 transition"
+              >
+                MENU
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 mt-2 w-50 bg-white/20 backdrop-blur-lg rounded-lg shadow-lg py-2 flex flex-col">
+                  {["vegetarian", "non-veg", "drinks", "desserts"].map((item) => (
+                    <button
+                      key={item}
+                      onClick={() => {
+                        navigate(`/card/${item}`);
+                        setMenuOpen(false);
+                      }}
+                      className="text-white px-4 py-2 text-left hover:bg-white/30"
+                    >
+                      {item.charAt(0).toUpperCase() + item.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Auth/Profile */}
             {!user ? (
@@ -129,41 +147,6 @@ const Card = () => {
         </div>
       </nav>
 
-      {/* ✅ Drawer */}
-      <div
-        className={`fixed top-0 right-0 h-full w-40 bg-gray-900 text-white shadow-xl transform transition-transform duration-300 z-40 ${
-          isDrawerOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        <div className="flex justify-between items-center p-4 border-b border-gray-700">
-          <button onClick={() => setIsDrawerOpen(false)} className="text-white text-2xl">
-            &times;
-          </button>
-        </div>
-        <div className="flex flex-col mt-4 space-y-4 px-4">
-          {["vegetarian", "non-veg", "drinks", "desserts"].map((item) => (
-            <button
-              key={item}
-              onClick={() => {
-                navigate(`/card/${item}`);
-                setIsDrawerOpen(false);
-              }}
-              className="hover:bg-gray-700 p-2 rounded"
-            >
-              {item.charAt(0).toUpperCase() + item.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Overlay */}
-      {isDrawerOpen && (
-        <div
-          onClick={() => setIsDrawerOpen(false)}
-          className="fixed inset-0 bg-black/50 z-30"
-        ></div>
-      )}
-
       {/* ✅ Main Card Content */}
       <div className="flex-grow backdrop-blur-md bg-white/10 p-10 shadow-2xl overflow-auto hide-scrollbar pt-20">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 w-full">
@@ -179,6 +162,7 @@ const Card = () => {
                   className="w-full h-32 object-cover rounded-md mb-2"
                 />
                 <span className="text-center mb-2">{meal.name}</span>
+                {/* ✅ Updated navigation to details.jsx */}
                 <button
                   onClick={() => navigate(`/meal/${meal.id}`)}
                   className="mt-auto px-4 py-2 bg-white/20 text-white font-bold rounded-full hover:bg-white/30 transition duration-300 border border-white/10"
@@ -188,7 +172,7 @@ const Card = () => {
               </div>
             ))
           ) : (
-            <p className="text-center text-white text-xl col-span-full">
+            <p className="flex items-center justify-center text-white text-xl col-span-full min-h-[60vh]">
               No recipes found.
             </p>
           )}
