@@ -3,8 +3,10 @@ import cors from "cors";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import authRoutes from "./routes/authRoutes.js";
-import mealRoutes from "./routes/mealRoutes.js"; // ✅ import meal routes
+import mealRoutes from "./routes/mealRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js"; // ✅ AI routes
 
+// Load environment variables
 dotenv.config();
 
 const app = express();
@@ -15,9 +17,18 @@ app.use(cors());
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/meals", mealRoutes); // ✅ mount meal routes
+app.use("/api/meals", mealRoutes);
+app.use("/api/ai", aiRoutes); // ✅ mount AI routes
 
-// Connect to MongoDB
+// Check Gemini API key
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+  console.error("❌ Gemini API key not found! Please set GEMINI_API_KEY in .env");
+} else {
+  console.log("✅ Gemini API key loaded successfully");
+}
+
+// Connect to MongoDB and start server
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
