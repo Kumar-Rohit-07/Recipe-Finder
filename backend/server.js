@@ -4,7 +4,8 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import authRoutes from "./routes/authRoutes.js";
 import mealRoutes from "./routes/mealRoutes.js";
-import aiRoutes from "./routes/aiRoutes.js"; // ✅ AI routes
+import aiRoutes from "./routes/aiRoutes.js"; // AI routes
+import translateRoutes from "./routes/translateRoutes.js"; // ✅ Translate routes
 
 // Load environment variables
 dotenv.config();
@@ -18,14 +19,23 @@ app.use(cors());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/meals", mealRoutes);
-app.use("/api/ai", aiRoutes); // ✅ mount AI routes
+app.use("/api/ai", aiRoutes);
+app.use("/api/translate", translateRoutes); // ✅ mount translate routes
 
-// Check Gemini API key
+// Check API keys
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const TRANSLATE_API_KEY = process.env.TRANSLATE_API_KEY;
+
 if (!GEMINI_API_KEY) {
   console.error("❌ Gemini API key not found! Please set GEMINI_API_KEY in .env");
 } else {
   console.log("✅ Gemini API key loaded successfully");
+}
+
+if (!TRANSLATE_API_KEY) {
+  console.error("❌ Translate API key not found! Please set TRANSLATE_API_KEY in .env");
+} else {
+  console.log("✅ Translate API key loaded successfully");
 }
 
 // Connect to MongoDB and start server
