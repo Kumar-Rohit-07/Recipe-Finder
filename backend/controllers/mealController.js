@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 
-// ✅ Existing: Get meals/drinks by category
+// ✅ Get meals/drinks by category
 export const getMealsByCategory = async (req, res) => {
   try {
     const { category } = req.params;
@@ -50,7 +50,7 @@ export const getMealsByCategory = async (req, res) => {
   }
 };
 
-// ✅ New: Get meal/drink details by ID
+// ✅ Get meal/drink details by ID
 export const getMealById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -84,6 +84,17 @@ export const getMealById = async (req, res) => {
       }
     }
 
+    // 🔹 Map raw API category to your frontend categories
+    const categoryMap = {
+      Vegetarian: "Veg",
+      Chicken: "Non-Veg",
+      Dessert: "Dessert",
+      Cocktail: "Drink",
+    };
+
+    const rawCategory = item.strCategory || item.strAlcoholic || "Uncategorized";
+    const normalizedCategory = categoryMap[rawCategory] || "Uncategorized";
+
     // Normalize structure
     const dish = {
       id: item.idMeal || item.idDrink,
@@ -91,6 +102,7 @@ export const getMealById = async (req, res) => {
       image: item.strMealThumb || item.strDrinkThumb,
       procedure: item.strInstructions,
       ingredients,
+      category: normalizedCategory, // ✅ send clean category
     };
 
     res.json(dish);
