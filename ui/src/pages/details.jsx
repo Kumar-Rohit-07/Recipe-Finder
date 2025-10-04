@@ -1,10 +1,12 @@
 // src/pages/details.jsx
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom"; // ⬅️ import navigate
 import axios from "axios";
 
 const Details = () => {
   const { id } = useParams();
+  const navigate = useNavigate(); // ⬅️ setup navigation
+
   const [dish, setDish] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -94,8 +96,9 @@ const Details = () => {
               </span>
             </div>
 
-            {/* 🔹 Guide Button (back to old style) */}
+            {/* 🔹 Guide Button → navigates to Guide Page */}
             <button
+              onClick={() => navigate(`/guide/${id}`)} // ⬅️ Navigate
               className="px-6 py-2 rounded-full text-white font-semibold shadow-lg 
                 bg-gradient-to-r from-yellow-400 to-orange-500
                 hover:scale-105 transition-transform duration-300"
