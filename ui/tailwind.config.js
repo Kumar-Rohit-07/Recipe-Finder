@@ -7,7 +7,6 @@ module.exports = {
   theme: {
     extend: {
       keyframes: {
-        // 🔹 Existing Glow Animations
         pulseGlowGreen: {
           "0%, 100%": { boxShadow: "0 0 10px #22c55e, 0 0 20px #15803d" },
           "50%": { boxShadow: "0 0 20px #4ade80, 0 0 40px #22c55e" },
@@ -28,12 +27,6 @@ module.exports = {
           "0%, 100%": { boxShadow: "0 0 10px #6b7280, 0 0 20px #111827" },
           "50%": { boxShadow: "0 0 20px #9ca3af, 0 0 40px #6b7280" },
         },
-
-        // 🔹 New Gradient Animation
-        "gradient-move": {
-          "0%, 100%": { backgroundPosition: "0% 0%" },
-          "50%": { backgroundPosition: "100% 100%" },
-        },
       },
       animation: {
         pulseGlowGreen: "pulseGlowGreen 2s ease-in-out infinite",
@@ -41,9 +34,6 @@ module.exports = {
         pulseGlowPink: "pulseGlowPink 2s ease-in-out infinite",
         pulseGlowBlue: "pulseGlowBlue 2s ease-in-out infinite",
         pulseGlowGray: "pulseGlowGray 2s ease-in-out infinite",
-
-        // 🔹 Gradient Animation
-        "gradient-move": "gradient-move 8s ease-in-out infinite",
       },
     },
   },

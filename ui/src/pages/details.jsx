@@ -1,9 +1,12 @@
+// src/pages/details.jsx
 import React, { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const Details = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+
   const [dish, setDish] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,7 +40,7 @@ const Details = () => {
   // ✅ Normalized category
   const category = dish.category?.trim() || "Uncategorized";
 
-  // 🎨 Styling per category (Diagonal Radial Gradient)
+  // 🎨 Styling per category (Using animated radial gradient from version 2)
   const categoryStyles = {
     Veg: {
       bg: "bg-[radial-gradient(circle_at_top_left,#bbf7d0,#065f46)] bg-[length:200%_200%] animate-gradient-move",
@@ -74,7 +77,7 @@ const Details = () => {
         
         {/* 🔹 Top Row: Image + Name + Category Badge */}
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-          {/* Image (✅ removed shadow + glow) */}
+          {/* Image (no shadow as per version 2) */}
           <img
             src={dish.image}
             alt={dish.name}
@@ -93,12 +96,12 @@ const Details = () => {
               </span>
             </div>
 
-            {/* 🔹 Guide Button */}
+            {/* 🔹 Guide Button with navigation from version 1 */}
             <button
-              className="px-2 py-2 rounded-full text-sm text-white font-medium shadow-md 
-                        bg-gradient-to-r from-yellow-400 to-orange-500
-                        hover:scale-105 transition-transform duration-300"
-
+              onClick={() => navigate(`/guide/${id}`)}
+              className="px-6 py-2 rounded-full text-white font-semibold shadow-lg 
+                bg-gradient-to-r from-yellow-400 to-orange-500
+                hover:scale-105 transition-transform duration-300"
             >
               Guide
             </button>
@@ -110,7 +113,7 @@ const Details = () => {
           className="flex flex-col md:flex-row md:divide-x-2 md:divide-gray-400 
                      backdrop-blur-md bg-white/70 rounded-2xl p-6"
         >
-          {/* Ingredients */}
+          {/* Ingredients with Read More functionality */}
           <div className="w-full md:w-1/2 md:pr-6" ref={ingredientsRef}>
             <h2 className="text-2xl font-semibold mb-3">Ingredients</h2>
             <ul
@@ -137,7 +140,7 @@ const Details = () => {
             )}
           </div>
 
-          {/* Procedure */}
+          {/* Procedure with Read More functionality */}
           <div className="w-full md:w-1/2 md:pl-6 mt-6 md:mt-0" ref={procedureRef}>
             <h2 className="text-2xl font-semibold mb-3">Cooking Procedure</h2>
             <p

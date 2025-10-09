@@ -1,9 +1,10 @@
 /* src/pages/Card.jsx */
+import ReactMarkdown from "react-markdown";
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { Search } from "lucide-react";
+import { Search, Bot } from "lucide-react"; // ✅ Bot icon
 
 const Card = () => {
   const { category } = useParams();
@@ -13,14 +14,21 @@ const Card = () => {
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false); // ✅ for profile
-  const [menuOpen, setMenuOpen] = useState(false); // ✅ for menu
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
+
+  // ✅ Chatbot states
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
 
   useEffect(() => {
     const fetchMeals = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/meals/category/${category}`);
+        const res = await axios.get(
+          `http://localhost:5000/api/meals/category/${category}`
+        );
         setMeals(res.data.meals);
       } catch (err) {
         setError("Failed to load meals");
@@ -35,10 +43,35 @@ const Card = () => {
     meal.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  // ✅ Send message to AI
+  const sendMessage = async () => {
+    if (!input.trim()) return;
+    const newMsg = { sender: "user", message: input };
+    setMessages((prev) => [...prev, newMsg]);
+    setInput("");
+
+    try {
+      const res = await axios.post("http://localhost:5000/api/ai/chat", {
+        message: input,
+      });
+      const botReply = { sender: "bot", message: res.data.reply };
+      setMessages((prev) => [...prev, botReply]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", message: "Error: Failed to connect to AI." },
+      ]);
+    }
+  };
+
   if (loading)
-    return <div className="text-white text-2xl text-center mt-20">Loading...</div>;
+    return (
+      <div className="text-white text-2xl text-center mt-20">Loading...</div>
+    );
   if (error)
-    return <div className="text-red-500 text-2xl text-center mt-20">{error}</div>;
+    return (
+      <div className="text-red-500 text-2xl text-center mt-20">{error}</div>
+    );
 
   return (
     <div className="min-h-screen flex flex-col bg-animate">
@@ -78,18 +111,20 @@ const Card = () => {
               </button>
               {menuOpen && (
                 <div className="absolute right-0 mt-2 w-50 bg-white/20 backdrop-blur-lg rounded-lg shadow-lg py-2 flex flex-col">
-                  {["vegetarian", "non-veg", "drinks", "desserts"].map((item) => (
-                    <button
-                      key={item}
-                      onClick={() => {
-                        navigate(`/card/${item}`);
-                        setMenuOpen(false);
-                      }}
-                      className="text-white px-4 py-2 text-left hover:bg-white/30"
-                    >
-                      {item.charAt(0).toUpperCase() + item.slice(1)}
-                    </button>
-                  ))}
+                  {["vegetarian", "non-veg", "drinks", "desserts"].map(
+                    (item) => (
+                      <button
+                        key={item}
+                        onClick={() => {
+                          navigate(`/card/${item}`);
+                          setMenuOpen(false);
+                        }}
+                        className="text-white px-4 py-2 text-left hover:bg-white/30"
+                      >
+                        {item.charAt(0).toUpperCase() + item.slice(1)}
+                      </button>
+                    )
+                  )}
                 </div>
               )}
             </div>
@@ -162,7 +197,6 @@ const Card = () => {
                   className="w-full h-32 object-cover rounded-md mb-2"
                 />
                 <span className="text-center mb-2">{meal.name}</span>
-                {/* ✅ Updated navigation to details.jsx */}
                 <button
                   onClick={() => navigate(`/meal/${meal.id}`)}
                   className="mt-auto px-4 py-2 bg-white/20 text-white font-bold rounded-full hover:bg-white/30 transition duration-300 border border-white/10"
@@ -177,6 +211,67 @@ const Card = () => {
             </p>
           )}
         </div>
+      </div>
+
+      {/* ✅ Chatbot Button + Window */}
+      <div className="fixed bottom-6 right-6 resize-x">
+        {/* Bot toggle button */}
+        <button
+          onClick={() => setChatOpen(!chatOpen)}
+          className="w-14 h-14 flex items-center justify-center rounded-full bg-purple-600 text-white shadow-lg hover:bg-purple-700 transition"
+        >
+          <Bot size={28} />
+        </button>
+
+        {/* Chat Window */}
+        {chatOpen && (
+          <div className="absolute bottom-16 right-4 w-[22rem] h-[28rem] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200">
+            {/* Header with Close Button */}
+            <div className="bg-purple-600 text-white px-4 py-2 font-bold flex justify-between items-center">
+              <span>🤖 Chatbot</span>
+              <button
+                onClick={() => setChatOpen(false)}
+                className="text-white hover:text-gray-200 text-xl font-bold"
+                aria-label="Close chatbot"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-grow p-3 overflow-y-auto space-y-2 text-sm">
+              {messages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`p-2 rounded-lg shadow-md max-w-[75%] whitespace-pre-wrap ${
+                    msg.sender === "user"
+                      ? "bg-purple-500 text-white self-end ml-auto"
+                      : "bg-blue-500 text-white self-start"
+                  }`}
+                >
+                  <ReactMarkdown>{msg.message}</ReactMarkdown>
+                </div>
+              ))}
+            </div>
+
+            {/* Input */}
+            <div className="p-2 border-t border-gray-200 flex">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type a message..."
+                className="flex-grow px-3 py-2 rounded-l-lg bg-gray-100 text-gray-900 placeholder-gray-500 focus:outline-none"
+              />
+              <button
+                onClick={sendMessage}
+                className="px-4 bg-purple-600 text-white rounded-r-lg hover:bg-purple-700"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -6,13 +6,15 @@ import LandingPage from "./pages/LandingPage";
 import Card from "./pages/Card";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
-import Details from "./pages/details"; // ✅ Import your details page
+import Details from "./pages/details";  // ✅ Dish details page
+import Guide from "./pages/Guide";      // ✅ Import Guide page
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -33,6 +35,16 @@ function App() {
             element={
               <ProtectedRoute>
                 <Details />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 🔒 Guide page (step-by-step cooking) */}
+          <Route
+            path="/guide/:id"
+            element={
+              <ProtectedRoute>
+                <Guide />
               </ProtectedRoute>
             }
           />

@@ -5,12 +5,11 @@ export const getMealsByCategory = async (req, res) => {
   try {
     const { category } = req.params;
 
-    // Map categories to correct API sources
     const categoryMap = {
       vegetarian: { type: "meal", value: "Vegetarian" },
       "non-veg": { type: "meal", value: "Chicken" },
       desserts: { type: "meal", value: "Dessert" },
-      drinks: { type: "drink", value: "Cocktail" }, // ✅ Cocktail is reliable
+      drinks: { type: "drink", value: "Cocktail" },
     };
 
     const selected =
@@ -27,8 +26,6 @@ export const getMealsByCategory = async (req, res) => {
       )}`;
     }
 
-    console.log("Fetching from:", url);
-
     const response = await fetch(url);
     const data = await response.json();
 
@@ -36,7 +33,6 @@ export const getMealsByCategory = async (req, res) => {
       return res.status(404).json({ message: "No items found" });
     }
 
-    // Normalize meals/drinks to a single format
     const items = (data.meals || data.drinks).map((item) => ({
       id: item.idMeal || item.idDrink,
       name: item.strMeal || item.strDrink,
@@ -74,7 +70,7 @@ export const getMealById = async (req, res) => {
       return res.status(404).json({ message: "Meal/Drink not found" });
     }
 
-    // Extract ingredients (up to 20 fields in API)
+    // Extract ingredients
     const ingredients = [];
     for (let i = 1; i <= 20; i++) {
       const ingredient = item[`strIngredient${i}`];
@@ -84,7 +80,7 @@ export const getMealById = async (req, res) => {
       }
     }
 
-    // 🔹 Map raw API category to your frontend categories
+    // Map category names
     const categoryMap = {
       Vegetarian: "Veg",
       Chicken: "Non-Veg",
@@ -95,14 +91,66 @@ export const getMealById = async (req, res) => {
     const rawCategory = item.strCategory || item.strAlcoholic || "Uncategorized";
     const normalizedCategory = categoryMap[rawCategory] || "Uncategorized";
 
-    // Normalize structure
+    // ✅ Smart step/paragraph logic
+    let procedureSteps = [];
+    let procedureParagraphs = [];
+
+    if (item.strInstructions) {
+      const cleanText = item.strInstructions
+        .replace(/\r\n/g, "\n")
+        .replace(/\n{2,}/g, "\n\n")
+        .trim();
+
+      // 🧩 1️⃣ If numbered steps (1., 2., etc.)
+      if (/\d+\./.test(cleanText)) {
+        const parts = cleanText
+          .split(/\d+\.\s*/)
+          .map((p) => p.trim())
+          .filter((p) => p.length > 3);
+        procedureParagraphs = parts;
+        procedureSteps = parts.map((p, i) => `Step ${i + 1}: ${p}`);
+      }
+      // 🧩 2️⃣ If "Step 1", "Step 2", etc.
+      else if (/Step\s*\d+/i.test(cleanText)) {
+        const parts = cleanText
+          .split(/Step\s*\d+[:.\-]?\s*/i)
+          .map((p) => p.trim())
+          .filter((p) => p.length > 3);
+        procedureParagraphs = parts;
+        procedureSteps = parts.map((p, i) => `Step ${i + 1}: ${p}`);
+      }
+      // 🧩 3️⃣ If blank lines (paragraph gaps)
+      else if (/\n{2,}/.test(cleanText)) {
+        const parts = cleanText
+          .split(/\n{2,}/)
+          .map((p) => p.trim())
+          .filter((p) => p.length > 3);
+        procedureParagraphs = parts;
+        procedureSteps = parts.map((p, i) => `Step ${i + 1}: ${p}`);
+      }
+      // 🧩 4️⃣ Else – group every 3 sentences
+      else {
+        const sentences = cleanText
+          .split(/(?<=[.!?])\s+/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 3);
+        for (let i = 0; i < sentences.length; i += 3) {
+          const chunk = sentences.slice(i, i + 3).join(" ");
+          procedureParagraphs.push(chunk);
+          procedureSteps.push(`Step ${procedureSteps.length + 1}: ${chunk}`);
+        }
+      }
+    }
+
     const dish = {
       id: item.idMeal || item.idDrink,
       name: item.strMeal || item.strDrink,
       image: item.strMealThumb || item.strDrinkThumb,
       procedure: item.strInstructions,
+      procedureParagraphs,
+      procedureSteps,
       ingredients,
-      category: normalizedCategory, // ✅ send clean category
+      category: normalizedCategory,
     };
 
     res.json(dish);
