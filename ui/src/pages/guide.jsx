@@ -1,7 +1,7 @@
-// src/pages/Guide.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import StepTimer from "../components/Guide/StepTimer"; // ✅ Timer import
 
 const Guide = () => {
   const { id } = useParams();
@@ -11,21 +11,30 @@ const Guide = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(true);
   const [translating, setTranslating] = useState(false);
+  const [loadingTip, setLoadingTip] = useState(false);
   const [error, setError] = useState(null);
   const [dish, setDish] = useState(null);
-  const [language, setLanguage] = useState("english"); // default
+  const [aiTip, setAiTip] = useState("");
+  const [language, setLanguage] = useState(
+    localStorage.getItem("selectedLanguage") || "English"
+  );
+
+  // 🔹 Timer-related state
+  const [timerData, setTimerData] = useState({
+    estimated_time: null,
+    flame_level: null,
+  });
 
   const languages = [
-    { label: "English", value: "english" },
-    { label: "Hindi", value: "hindi" },
-    { label: "Spanish", value: "spanish" },
-    { label: "French", value: "french" },
-    { label: "German", value: "german" },
-    { label: "Chinese", value: "chinese" },
-    // Add more languages as needed
+    { label: "English", value: "English" },
+    { label: "Hindi", value: "Hindi" },
+    { label: "Spanish", value: "Spanish" },
+    { label: "French", value: "French" },
+    { label: "German", value: "German" },
+    { label: "Chinese", value: "Chinese" },
   ];
 
-  // Fetch dish & initial English steps
+  // ✅ Fetch recipe data
   useEffect(() => {
     const fetchGuide = async () => {
       try {
@@ -33,85 +42,140 @@ const Guide = () => {
         const recipe = res.data;
         setDish(recipe);
 
-        const rawSteps = recipe.procedure
-          .split(/[\r\n]+|\. /)
-          .map(s => s.trim())
-          .filter(s => s.length > 0);
+        const rawSteps =
+          recipe.procedureSteps && recipe.procedureSteps.length > 0
+            ? recipe.procedureSteps
+            : [recipe.procedure];
 
-        const initialSteps = rawSteps.map(step => ({
-          english: step,
-          hindi: "अनुवाद उपलब्ध नहीं",
-          spanish: "Traducción no disponible",
-          french: "Traduction non disponible",
-          german: "Übersetzung nicht verfügbar",
-          chinese: "翻译不可用",
-          details: "No extra details",
-        }));
-
+        const initialSteps = rawSteps.map((step) => ({ en: step }));
         setSteps(initialSteps);
       } catch (err) {
+        console.error(err);
         setError("Failed to load recipe guide");
       } finally {
         setLoading(false);
       }
     };
-
     fetchGuide();
   }, [id]);
 
-  // Translate steps when language changes
+  // ✅ Translate current step
   useEffect(() => {
-    if (language === "english" || steps.length === 0) return;
+    if (language === "English" || steps.length === 0) return;
 
-    const translateAllSteps = async () => {
-      setTranslating(true);
-      const updatedSteps = [];
+    const translateCurrentStep = async () => {
+      const updatedSteps = [...steps];
+      const current = updatedSteps[currentStep];
+      if (current[language]) return;
 
-      for (let step of steps) {
-        try {
-          const res = await axios.post(`http://localhost:5000/api/ai/translate-step`, {
-            step: step.english,
-            language,
-          });
-          updatedSteps.push({
-            ...step,
-            [language]: res.data.translatedText,
-          });
-        } catch (err) {
-          updatedSteps.push({
-            ...step,
-            [language]: "अनुवाद उपलब्ध नहीं",
-          });
-        }
+    try {
+        setTranslating(true);
+        const res = await axios.post("http://localhost:5000/api/translate/translate", {
+          text: current.en,
+          target: language,
+        });
+        updatedSteps[currentStep][language] = res.data.translatedText;
+        setSteps(updatedSteps);
+      } catch (err) {
+        console.error("Translation error:", err);
+        updatedSteps[currentStep][language] = "Translation unavailable";
+        setSteps(updatedSteps);
+      } finally {
+        setTranslating(false);
+      }
+    };
+    translateCurrentStep();
+  }, [language, currentStep, steps]);
+
+  // ✅ Fetch AI Tip
+  useEffect(() => {
+    const fetchTip = async () => {
+      const stepText = steps[currentStep]?.en?.trim();
+      if (!stepText) return;
+
+      try {
+        setLoadingTip(true);
+        const res = await axios.post("http://localhost:5000/api/translate/tip", {
+          text: stepText,
+          language,
+        });
+        setAiTip(res.data.tip || "Tip unavailable at the moment.");
+      } catch {
+        setAiTip("Tip unavailable at the moment.");
+      } finally {
+        setLoadingTip(false);
+      }
+    };
+    fetchTip();
+  }, [currentStep, steps, language]);
+
+  // ✅ Fetch AI Timer + Flame for each step
+  useEffect(() => {
+    const analyzeStep = async () => {
+      const stepText = steps[currentStep]?.en?.trim();
+      if (!stepText) {
+        setTimerData({ estimated_time: null, flame_level: null });
+        return;
       }
 
-      setSteps(updatedSteps);
-      setTranslating(false);
+      try {
+        const res = await axios.post("http://localhost:5000/api/timer/analyze-step", {
+          stepText,
+          language,
+        });
+
+        const timeValue = Number(res.data.estimated_time);
+        setTimerData({
+          estimated_time: !isNaN(timeValue) && timeValue > 0 ? timeValue : null,
+          flame_level: res.data.flame_level || "Medium",
+        });
+      } catch (err) {
+        console.error("Timer analysis error:", err);
+        setTimerData({ estimated_time: null, flame_level: null });
+      }
     };
+    analyzeStep();
+  }, [currentStep, language]); // ✅ Clean dependencies
 
-    translateAllSteps();
-  }, [language]);
+  const handleLanguageChange = (lang) => {
+    setLanguage(lang);
+    localStorage.setItem("selectedLanguage", lang);
+  };
 
-  if (loading) return <div className="text-center text-2xl mt-20">Loading...</div>;
-  if (error) return <div className="text-center text-red-500 mt-20">{error}</div>;
+  if (loading)
+    return <div className="text-center text-2xl mt-20">Loading...</div>;
+  if (error)
+    return <div className="text-center text-red-500 mt-20">{error}</div>;
   if (!dish) return null;
 
   const stepData = steps[currentStep] || {};
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-yellow-100 via-orange-100 to-white flex flex-col items-center p-6">
+    <div className="min-h-screen bg-gradient-to-b from-orange-50 via-yellow-50 to-white flex flex-col items-center p-6 relative">
+
+      {/* ✅ Timer appears only when valid estimated_time exists */}
+      {timerData.estimated_time !== null && (
+        <div className="absolute top-0 right-0 z-50">
+          <StepTimer
+            key={currentStep} // ✅ Restarts timer on each step change
+            baseTimeMinutes={timerData.estimated_time}
+            initialFlame={timerData.flame_level}
+          />
+        </div>
+      )}
+
       {/* Title */}
-      <h1 className="text-3xl md:text-4xl font-bold mb-6 text-purple-800">
+      <h1 className="text-3xl md:text-4xl font-bold mb-6 text-purple-800 text-center">
         {dish.name} - Cooking Guide
       </h1>
 
       {/* Language Selector */}
       <div className="mb-4">
-        <label className="mr-2 font-semibold">Select Language:</label>
+        <label className="mr-2 font-semibold text-gray-800">Select Language:</label>
         <select
           value={language}
-          onChange={(e) => setLanguage(e.target.value)}
-          className="px-2 py-1 rounded border"
+          onChange={(e) => handleLanguageChange(e.target.value)}
+          className="px-2 py-1 rounded border border-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
         >
           {languages.map((lang) => (
             <option key={lang.value} value={lang.value}>
@@ -119,17 +183,45 @@ const Guide = () => {
             </option>
           ))}
         </select>
-        {translating && <span className="ml-2 text-gray-600">Translating...</span>}
+        {translating && (
+          <span className="ml-2 text-gray-600 italic">Translating...</span>
+        )}
       </div>
 
-      {/* Current Step */}
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow-xl p-8 text-center">
-        <h2 className="text-xl font-semibold mb-4">Step {currentStep + 1}</h2>
-        <p className="text-gray-900 font-medium">{stepData.english}</p>
-        {language !== "english" && (
-          <p className="text-purple-700 mt-2">{stepData[language]}</p>
+      {/* Step Card */}
+      <div className="w-full md:max-w-5xl lg:max-w-6xl bg-white rounded-2xl shadow-lg p-8 border border-gray-100 transition-all duration-300 hover:shadow-xl">
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+          Step {currentStep + 1}
+        </h2>
+
+        <p className="text-gray-800 font-medium leading-relaxed mb-4">
+          {stepData.en}
+        </p>
+
+        {language !== "English" && (
+          <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-xl shadow-sm">
+            <h3 className="text-indigo-800 font-semibold mb-2">
+              Translation ({language})
+            </h3>
+            <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+              {stepData[language] || "Translation unavailable"}
+            </p>
+          </div>
         )}
-        <p className="text-sm text-gray-500 mt-1 italic">{stepData.details}</p>
+
+        {/* 💡 AI Tip Section */}
+        <div className="mt-6 p-4 bg-yellow-50 border-l-4 border-orange-400 rounded-lg shadow-sm transition-all duration-300">
+          <h3 className="text-orange-700 font-semibold mb-1">
+            💡 SMART Cooking Tip
+          </h3>
+          {loadingTip ? (
+            <p className="text-gray-500 italic">Generating tip...</p>
+          ) : (
+            <p className="text-gray-800 leading-relaxed italic">
+              {aiTip || "Tip unavailable"}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Navigation Buttons */}
@@ -138,7 +230,9 @@ const Guide = () => {
           onClick={() => setCurrentStep((prev) => prev - 1)}
           disabled={currentStep === 0}
           className={`px-6 py-2 rounded-lg font-semibold shadow-md transition ${
-            currentStep === 0 ? "bg-gray-300 cursor-not-allowed" : "bg-gray-600 text-white hover:bg-gray-700"
+            currentStep === 0
+              ? "bg-gray-300 cursor-not-allowed"
+              : "bg-gray-600 text-white hover:bg-gray-700"
           }`}
         >
           Prev
@@ -162,7 +256,7 @@ const Guide = () => {
       </div>
 
       {/* Progress Indicator */}
-      <div className="mt-4 text-gray-600">
+      <div className="mt-4 text-gray-700 font-medium">
         Step {currentStep + 1} of {steps.length}
       </div>
     </div>

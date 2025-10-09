@@ -1,4 +1,5 @@
 /* src/pages/Card.jsx */
+import ReactMarkdown from "react-markdown";
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
@@ -213,7 +214,7 @@ const Card = () => {
       </div>
 
       {/* ✅ Chatbot Button + Window */}
-      <div className="fixed bottom-6 right-6">
+      <div className="fixed bottom-6 right-6 resize-x">
         {/* Bot toggle button */}
         <button
           onClick={() => setChatOpen(!chatOpen)}
@@ -224,10 +225,17 @@ const Card = () => {
 
         {/* Chat Window */}
         {chatOpen && (
-          <div className="absolute bottom-16 right-0 w-80 h-96 bg-white rounded-xl shadow-lg flex flex-col overflow-hidden">
-            {/* Header */}
-            <div className="bg-purple-600 text-white px-4 py-2 font-bold">
-              🤖 Chatbot
+          <div className="absolute bottom-16 right-4 w-[22rem] h-[28rem] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200">
+            {/* Header with Close Button */}
+            <div className="bg-purple-600 text-white px-4 py-2 font-bold flex justify-between items-center">
+              <span>🤖 Chatbot</span>
+              <button
+                onClick={() => setChatOpen(false)}
+                className="text-white hover:text-gray-200 text-xl font-bold"
+                aria-label="Close chatbot"
+              >
+                ✕
+              </button>
             </div>
 
             {/* Messages */}
@@ -235,13 +243,13 @@ const Card = () => {
               {messages.map((msg, i) => (
                 <div
                   key={i}
-                  className={`p-2 rounded-lg shadow-md max-w-[75%] ${
+                  className={`p-2 rounded-lg shadow-md max-w-[75%] whitespace-pre-wrap ${
                     msg.sender === "user"
                       ? "bg-purple-500 text-white self-end ml-auto"
                       : "bg-blue-500 text-white self-start"
                   }`}
                 >
-                  {msg.message}
+                  <ReactMarkdown>{msg.message}</ReactMarkdown>
                 </div>
               ))}
             </div>

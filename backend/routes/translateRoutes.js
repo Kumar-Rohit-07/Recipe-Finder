@@ -1,10 +1,15 @@
 // routes/translateRoutes.js
 import express from "express";
-import { translateText } from "../controllers/translateController.js";
+import { translateText, getCookingTip } from "../controllers/translateController.js";
 
 const router = express.Router();
 
-// POST /api/translate
+// ✅ Existing translation route
+// POST /api/translate/translate
 router.post("/translate", translateText);
+
+// ✅ New: AI Cooking Tip Generator route
+// POST /api/translate/tip
+router.post("/tip", getCookingTip);
 
 export default router;

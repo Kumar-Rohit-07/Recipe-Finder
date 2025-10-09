@@ -1,15 +1,23 @@
 // src/pages/details.jsx
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom"; // ⬅️ import navigate
+import React, { useEffect, useState, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const Details = () => {
   const { id } = useParams();
-  const navigate = useNavigate(); // ⬅️ setup navigation
+  const navigate = useNavigate();
 
   const [dish, setDish] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // ✅ State for Read More toggles
+  const [showFullIngredients, setShowFullIngredients] = useState(false);
+  const [showFullProcedure, setShowFullProcedure] = useState(false);
+
+  // ✅ Refs for scrollIntoView
+  const ingredientsRef = useRef(null);
+  const procedureRef = useRef(null);
 
   useEffect(() => {
     const fetchDish = async () => {
@@ -29,44 +37,39 @@ const Details = () => {
   if (error) return <div className="text-red-500 text-2xl text-center">{error}</div>;
   if (!dish) return null;
 
-  // ✅ Normalized category (backend already fixes this, but fallback included)
+  // ✅ Normalized category
   const category = dish.category?.trim() || "Uncategorized";
 
-  // 🎨 Styling per category
+  // 🎨 Styling per category (Using animated radial gradient from version 2)
   const categoryStyles = {
     Veg: {
-      bg: "bg-gradient-to-b from-green-200 via-green-100 to-white",
+      bg: "bg-[radial-gradient(circle_at_top_left,#bbf7d0,#065f46)] bg-[length:200%_200%] animate-gradient-move",
       badge: "bg-green-600/90 text-white shadow-lg shadow-green-400/50",
-      glow: "shadow-green-400/60",
       circle: "bg-green-600",
     },
     "Non-Veg": {
-      bg: "bg-gradient-to-b from-red-200 via-red-100 to-white",
+      bg: "bg-[radial-gradient(circle_at_top_left,#fecaca,#7f1d1d)] bg-[length:200%_200%] animate-gradient-move",
       badge: "bg-red-700/90 text-white shadow-lg shadow-red-400/50",
-      glow: "shadow-red-400/60",
       circle: "bg-red-600",
     },
     Dessert: {
-      bg: "bg-gradient-to-b from-blue-200 via-blue-100 to-white",
+      bg: "bg-[radial-gradient(circle_at_top_left,#e0e7ff,#1e3a8a)] bg-[length:200%_200%] animate-gradient-move",
       badge: "bg-blue-700/90 text-white shadow-lg shadow-blue-400/50",
-      glow: "shadow-blue-400/60",
       circle: "bg-blue-600",
     },
     Drink: {
-      bg: "bg-gradient-to-b from-yellow-200 via-yellow-100 to-white",
+      bg: "bg-[radial-gradient(circle_at_top_left,#fef08a,#92400e)] bg-[length:200%_200%] animate-gradient-move",
       badge: "bg-yellow-600/90 text-white shadow-lg shadow-yellow-400/50",
-      glow: "shadow-yellow-400/60",
       circle: "bg-yellow-500",
     },
     Uncategorized: {
-      bg: "bg-gradient-to-b from-slate-200 via-slate-100 to-white",
+      bg: "bg-[radial-gradient(circle_at_top_left,#f3f4f6,#1f2937)] bg-[length:200%_200%] animate-gradient-move",
       badge: "bg-gray-700/90 text-white shadow-lg shadow-gray-400/50",
-      glow: "shadow-gray-400/60",
       circle: "bg-gray-500",
     },
   };
 
-  const { bg, badge, glow, circle } = categoryStyles[category] || categoryStyles.Uncategorized;
+  const { bg, badge, circle } = categoryStyles[category] || categoryStyles.Uncategorized;
 
   return (
     <div className={`min-h-screen w-full ${bg} p-6 flex flex-col items-center text-gray-900`}>
@@ -74,11 +77,11 @@ const Details = () => {
         
         {/* 🔹 Top Row: Image + Name + Category Badge */}
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-          {/* Image */}
+          {/* Image (no shadow as per version 2) */}
           <img
             src={dish.image}
             alt={dish.name}
-            className={`w-full md:w-1/3 h-[250px] object-cover rounded-lg shadow-2xl ${glow}`}
+            className="w-full md:w-1/3 h-[250px] object-cover rounded-lg"
           />
 
           {/* Name + Category */}
@@ -87,18 +90,15 @@ const Details = () => {
 
             {/* ✅ Category Badge with Circle */}
             <div className="flex items-center justify-center md:justify-start mb-4 gap-2">
-              {/* Circle */}
               <span className={`w-3 h-3 rounded-full ${circle}`}></span>
-
-              {/* Text Badge */}
               <span className={`px-4 py-1 rounded-full text-sm font-semibold shadow-lg ${badge}`}>
                 {category}
               </span>
             </div>
 
-            {/* 🔹 Guide Button → navigates to Guide Page */}
+            {/* 🔹 Guide Button with navigation from version 1 */}
             <button
-              onClick={() => navigate(`/guide/${id}`)} // ⬅️ Navigate
+              onClick={() => navigate(`/guide/${id}`)}
               className="px-6 py-2 rounded-full text-white font-semibold shadow-lg 
                 bg-gradient-to-r from-yellow-400 to-orange-500
                 hover:scale-105 transition-transform duration-300"
@@ -110,33 +110,69 @@ const Details = () => {
 
         {/* 🔹 Middle Row: Ingredients | Procedure */}
         <div
-          className={`flex flex-col md:flex-row md:divide-x-2 md:divide-gray-400 
-                     backdrop-blur-md bg-white/70 rounded-2xl shadow-2xl ${glow} p-6`}
+          className="flex flex-col md:flex-row md:divide-x-2 md:divide-gray-400 
+                     backdrop-blur-md bg-white/70 rounded-2xl p-6"
         >
-          {/* Ingredients */}
-          <div className="w-full md:w-1/2 md:pr-6">
+          {/* Ingredients with Read More functionality */}
+          <div className="w-full md:w-1/2 md:pr-6" ref={ingredientsRef}>
             <h2 className="text-2xl font-semibold mb-3">Ingredients</h2>
-            <ul className="list-disc pl-6 space-y-1">
+            <ul
+              className={`list-disc pl-6 space-y-1 transition-all duration-500 ${
+                showFullIngredients ? "max-h-full" : "max-h-40 overflow-hidden"
+              }`}
+            >
               {dish.ingredients?.map((item, index) => (
                 <li key={index}>{item}</li>
               ))}
             </ul>
+            {dish.ingredients?.length > 8 && (
+              <button
+                onClick={() => {
+                  setShowFullIngredients(!showFullIngredients);
+                  setTimeout(() => {
+                    ingredientsRef.current?.scrollIntoView({ behavior: "smooth" });
+                  }, 200);
+                }}
+                className="mt-3 text-blue-600 hover:underline font-medium"
+              >
+                {showFullIngredients ? "Read Less" : "Read More"}
+              </button>
+            )}
           </div>
 
-          {/* Procedure */}
-          <div className="w-full md:w-1/2 md:pl-6 mt-6 md:mt-0">
+          {/* Procedure with Read More functionality */}
+          <div className="w-full md:w-1/2 md:pl-6 mt-6 md:mt-0" ref={procedureRef}>
             <h2 className="text-2xl font-semibold mb-3">Cooking Procedure</h2>
-            <p className="leading-relaxed whitespace-pre-line">{dish.procedure}</p>
+            <p
+              className={`leading-relaxed whitespace-pre-line transition-all duration-500 ${
+                showFullProcedure ? "max-h-full" : "max-h-40 overflow-hidden"
+              }`}
+            >
+              {dish.procedure}
+            </p>
+            {dish.procedure?.length > 300 && (
+              <button
+                onClick={() => {
+                  setShowFullProcedure(!showFullProcedure);
+                  setTimeout(() => {
+                    procedureRef.current?.scrollIntoView({ behavior: "smooth" });
+                  }, 200);
+                }}
+                className="mt-3 text-blue-600 hover:underline font-medium"
+              >
+                {showFullProcedure ? "Read Less" : "Read More"}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* 🔹 Optional Bottom Section (extra image / content) */}
+        {/* 🔹 Optional Bottom Section */}
         {dish.extraImage && (
           <div className="w-full">
             <img
               src={dish.extraImage}
               alt="Extra"
-              className={`w-full h-[250px] object-cover rounded-lg shadow-2xl ${glow}`}
+              className="w-full h-[250px] object-cover rounded-lg"
             />
           </div>
         )}

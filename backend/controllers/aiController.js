@@ -1,10 +1,13 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// controllers/aiController.js
+import axios from "axios";
 import dotenv from "dotenv";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
 dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// 📌 Chat with AI (unchanged, just kept for recipe chat)
+// 📌 AI Chat Controller
 export const chatWithAI = async (req, res) => {
   try {
     const { message } = req.body;
@@ -12,72 +15,60 @@ export const chatWithAI = async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
     const prompt = `
       You are a Recipe Finder assistant. 
       Categories: Vegetarian, Non-Veg, Desserts, Drinks.
 
       Rules:
-      - Greetings → reply friendly.
-      - Recipe name → give ingredients + procedure.
-      - Ingredients list → suggest recipes + details.
-      - Unrelated → reply: "This is a Recipe Finder app. I can help you with recipes, ingredients, and cooking guidance."
-      - Keep responses short & recipe-focused.
+      - If user greets → reply friendly.
+      - If user gives a recipe name → provide ingredients + procedure.
+      - If user lists ingredients → suggest possible recipes + steps.
+      - If query is unrelated → reply: "This is a Recipe Finder app. I can help with recipes, ingredients, and cooking guidance."
+      - Keep responses concise and recipe-focused.
 
       User: ${message}
     `;
 
-    const result = await model.generateContent(prompt);
-    res.json({ reply: result.response.text() });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const response = await model.generateContent(prompt);
+    const output = response.response.text();
+
+    res.json({ reply: output });
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    res.status(500).json({ error: "Something went wrong with the AI service" });
+    console.error("Gemini API Error:", error.response?.data || error.message);
+    res.status(500).json({ error: "Failed to process AI request" });
   }
 };
 
-// 📌 New: Translate & enrich step
+// ✅ NEW: Translation Controller for Guide.jsx
 export const translateStep = async (req, res) => {
   try {
-    const { step } = req.body;
-    if (!step) {
-      return res.status(400).json({ error: "Step is required" });
+    const { step, language } = req.body;
+
+    if (!step || !language) {
+      return res.status(400).json({ error: "Step and language are required" });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const options = {
+      method: "POST",
+      url: "https://google-translate1.p.rapidapi.com/language/translate/v2",
+      headers: {
+        "content-type": "application/json",
+        "X-RapidAPI-Key": process.env.RAPIDAPI_KEY,
+        "X-RapidAPI-Host": "google-translate1.p.rapidapi.com",
+      },
+      data: {
+        q: step,
+        target: language,
+      },
+    };
 
-    const prompt = `
-      Take this cooking step: "${step}"
+    const response = await axios.request(options);
+    const translatedText = response.data.data.translations[0].translatedText;
 
-      1. Keep the original English text as is.
-      2. Translate it into Hindi (clear and natural).
-      3. Add approximate measurements or extra cooking details if relevant (example: "Heat oil in a pan" → "Heat 30 ml oil in a pan").
-
-      Respond in JSON format:
-      {
-        "english": "...",
-        "hindi": "...",
-        "details": "..."
-      }
-    `;
-
-    const result = await model.generateContent(prompt);
-
-    // Parse JSON safely
-    let output;
-    try {
-      output = JSON.parse(result.response.text());
-    } catch {
-      output = {
-        english: step,
-        hindi: "अनुवाद उपलब्ध नहीं",
-        details: "No extra details",
-      };
-    }
-
-    res.json(output);
+    res.json({ translatedText });
   } catch (error) {
-    console.error("Gemini API Translation Error:", error);
-    res.status(500).json({ error: "Failed to translate step" });
+    console.error("Translation Error:", error.response?.data || error.message);
+    res.status(500).json({ error: "Translation failed" });
   }
 };
