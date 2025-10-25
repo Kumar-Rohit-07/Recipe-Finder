@@ -3,53 +3,60 @@ import cors from "cors";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 
-// ✅ Import route files
 import authRoutes from "./routes/authRoutes.js";
-import mealRoutes from "./routes/mealRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import translateRoutes from "./routes/translateRoutes.js";
-import timerRoutes from "./routes/timerRoutes.js"; // 🔥 NEW: Timer route for AI-based cooking timer
+import timerRoutes from "./routes/timerRoutes.js";
+import ratingRoutes from "./routes/ratingRoutes.js";
+import dbRoutes from "./routes/dbRoutes.js";
+import mealRoutes from "./routes/mealRoutes.js";
+import countryRoutes from "./routes/countryRoutes.js";
+import ingredientsRoutes from "./routes/ingredientRoutes.js"; // ✅ updated
 
-// ✅ Load environment variables
+import { syncMealDB } from "./services/syncMealDB.js";
+
 dotenv.config();
 
 const app = express();
-
-// ✅ Middleware
 app.use(express.json());
 app.use(cors());
 
-// ✅ Routes
+// Register routes
 app.use("/api/auth", authRoutes);
-app.use("/api/meals", mealRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/translate", translateRoutes);
-app.use("/api/timer", timerRoutes); // 🔥 Added: Timer route endpoint
+app.use("/api/timer", timerRoutes);
+app.use("/api/ratings", ratingRoutes);
+app.use("/api/db", dbRoutes);
+app.use("/api/meals", mealRoutes);
+app.use("/api/countries", countryRoutes);
+app.use("/api/ingredients", ingredientsRoutes); // ✅ new
 
-// ✅ Verify Gemini API key
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-if (!GEMINI_API_KEY) {
-  console.error("❌ Gemini API key not found! Please set GEMINI_API_KEY in .env");
-} else {
-  console.log("✅ Gemini API key loaded successfully");
-}
-
-// ✅ MongoDB Connection + Server Start
+// MongoDB connection & server start
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGO_URI, {
+      dbName: "recipe_finder",
+    });
     console.log("✅ Connected to MongoDB");
 
+    const Meal = (await import("./models/dbModels.js")).default;
+    const count = await Meal.countDocuments();
+
+    if (count === 0) {
+      console.log("📦 No meals found — syncing from TheMealDB...");
+      await syncMealDB();
+      console.log("✅ Database sync complete");
+    } else {
+      console.log(`🍴 Meals already present (${count} records) — skipping sync`);
+    }
+
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
+    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
   } catch (err) {
-    console.error("❌ Failed to connect to MongoDB", err);
+    console.error("❌ MongoDB connection failed:", err.message);
     process.exit(1);
   }
 };
 
-// ✅ Initialize DB
 connectDB();

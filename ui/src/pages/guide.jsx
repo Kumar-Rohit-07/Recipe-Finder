@@ -19,7 +19,6 @@ const Guide = () => {
     localStorage.getItem("selectedLanguage") || "English"
   );
 
-  // 🔹 Timer-related state
   const [timerData, setTimerData] = useState({
     estimated_time: null,
     flame_level: null,
@@ -38,7 +37,11 @@ const Guide = () => {
   useEffect(() => {
     const fetchGuide = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/meals/meal/${id}`);
+        const res = await axios.get(`http://localhost:5000/api/meals/${id}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
         const recipe = res.data;
         setDish(recipe);
 
@@ -68,12 +71,20 @@ const Guide = () => {
       const current = updatedSteps[currentStep];
       if (current[language]) return;
 
-    try {
+      try {
         setTranslating(true);
-        const res = await axios.post("http://localhost:5000/api/translate/translate", {
-          text: current.en,
-          target: language,
-        });
+        const res = await axios.post(
+          "http://localhost:5000/api/translate/translate",
+          {
+            text: current.en,
+            target: language,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
         updatedSteps[currentStep][language] = res.data.translatedText;
         setSteps(updatedSteps);
       } catch (err) {
@@ -95,10 +106,18 @@ const Guide = () => {
 
       try {
         setLoadingTip(true);
-        const res = await axios.post("http://localhost:5000/api/translate/tip", {
-          text: stepText,
-          language,
-        });
+        const res = await axios.post(
+          "http://localhost:5000/api/translate/tip",
+          {
+            text: stepText,
+            language,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
         setAiTip(res.data.tip || "Tip unavailable at the moment.");
       } catch {
         setAiTip("Tip unavailable at the moment.");
@@ -119,10 +138,18 @@ const Guide = () => {
       }
 
       try {
-        const res = await axios.post("http://localhost:5000/api/timer/analyze-step", {
-          stepText,
-          language,
-        });
+        const res = await axios.post(
+          "http://localhost:5000/api/timer/analyze-step",
+          {
+            stepText,
+            language,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
 
         const timeValue = Number(res.data.estimated_time);
         setTimerData({
@@ -135,7 +162,7 @@ const Guide = () => {
       }
     };
     analyzeStep();
-  }, [currentStep, language]); // ✅ Clean dependencies
+  }, [currentStep, language]);
 
   const handleLanguageChange = (lang) => {
     setLanguage(lang);
@@ -152,26 +179,25 @@ const Guide = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 via-yellow-50 to-white flex flex-col items-center p-6 relative">
-
-      {/* ✅ Timer appears only when valid estimated_time exists */}
       {timerData.estimated_time !== null && (
         <div className="absolute top-0 right-0 z-50">
           <StepTimer
-            key={currentStep} // ✅ Restarts timer on each step change
             baseTimeMinutes={timerData.estimated_time}
             initialFlame={timerData.flame_level}
+            stepChanged={currentStep} // ✅ Add this prop
           />
         </div>
       )}
 
-      {/* Title */}
+
       <h1 className="text-3xl md:text-4xl font-bold mb-6 text-purple-800 text-center">
         {dish.name} - Cooking Guide
       </h1>
 
-      {/* Language Selector */}
       <div className="mb-4">
-        <label className="mr-2 font-semibold text-gray-800">Select Language:</label>
+        <label className="mr-2 font-semibold text-gray-800">
+          Select Language:
+        </label>
         <select
           value={language}
           onChange={(e) => handleLanguageChange(e.target.value)}
@@ -188,7 +214,6 @@ const Guide = () => {
         )}
       </div>
 
-      {/* Step Card */}
       <div className="w-full md:max-w-5xl lg:max-w-6xl bg-white rounded-2xl shadow-lg p-8 border border-gray-100 transition-all duration-300 hover:shadow-xl">
         <h2 className="text-xl font-semibold mb-4 text-gray-800">
           Step {currentStep + 1}
@@ -209,7 +234,6 @@ const Guide = () => {
           </div>
         )}
 
-        {/* 💡 AI Tip Section */}
         <div className="mt-6 p-4 bg-yellow-50 border-l-4 border-orange-400 rounded-lg shadow-sm transition-all duration-300">
           <h3 className="text-orange-700 font-semibold mb-1">
             💡 SMART Cooking Tip
@@ -224,7 +248,6 @@ const Guide = () => {
         </div>
       </div>
 
-      {/* Navigation Buttons */}
       <div className="flex gap-4 mt-6">
         <button
           onClick={() => setCurrentStep((prev) => prev - 1)}
@@ -255,7 +278,6 @@ const Guide = () => {
         )}
       </div>
 
-      {/* Progress Indicator */}
       <div className="mt-4 text-gray-700 font-medium">
         Step {currentStep + 1} of {steps.length}
       </div>

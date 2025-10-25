@@ -1,161 +1,116 @@
-import fetch from "node-fetch";
+// controllers/mealController.js
+import Meal from "../models/dbModels.js";
 
-// ✅ Get meals/drinks by category
+// ✅ Get meals by category (for frontend cards)
 export const getMealsByCategory = async (req, res) => {
   try {
     const { category } = req.params;
+    console.log("⚡ Backend hit → Fetching meals for category:", category);
 
-    const categoryMap = {
-      vegetarian: { type: "meal", value: "Vegetarian" },
-      "non-veg": { type: "meal", value: "Chicken" },
-      desserts: { type: "meal", value: "Dessert" },
-      drinks: { type: "drink", value: "Cocktail" },
-    };
-
-    const selected =
-      categoryMap[category.toLowerCase()] || categoryMap["vegetarian"];
-
-    let url = "";
-    if (selected.type === "meal") {
-      url = `https://www.themealdb.com/api/json/v1/1/filter.php?c=${encodeURIComponent(
-        selected.value
-      )}`;
-    } else if (selected.type === "drink") {
-      url = `https://www.thecocktaildb.com/api/json/v1/1/filter.php?c=${encodeURIComponent(
-        selected.value
-      )}`;
+    if (!category) {
+      return res.status(400).json({ message: "Category is required" });
     }
 
-    const response = await fetch(url);
-    const data = await response.json();
+    // Case-insensitive match for AI-assigned category
+    const meals = await Meal.find({
+      aiCategory: { $regex: new RegExp(`^${category}$`, "i") },
+    });
 
-    if (!data.meals && !data.drinks) {
-      return res.status(404).json({ message: "No items found" });
+    console.log("📦 Meals fetched from DB:", meals.length);
+    if (!meals.length) {
+      return res
+        .status(404)
+        .json({ message: "No meals found in this category", meals: [] });
     }
 
-    const items = (data.meals || data.drinks).map((item) => ({
-      id: item.idMeal || item.idDrink,
-      name: item.strMeal || item.strDrink,
-      image: item.strMealThumb || item.strDrinkThumb,
+    // Directly return avgRating and totalRatings stored in DB
+    const formattedMeals = meals.map((meal) => ({
+      _id: meal._id,
+      idMeal: meal.idMeal,
+      name: meal.strMeal,
+      image: meal.strMealThumb,
+      category: meal.aiCategory,
+      ingredients: meal.ingredients || [],
+      avgRating: meal.avgRating?.toFixed(1) || "3.0",
+      totalRatings: meal.totalRatings || 1,
     }));
 
-    res.json({ meals: items });
+    res.json({ meals: formattedMeals });
   } catch (err) {
-    console.error("Meal/Drink API Error:", err.message);
-    res.status(500).json({ message: "Failed to fetch meals/drinks" });
+    console.error("❌ Error fetching meals by category:", err.message);
+    res.status(500).json({ message: "Failed to fetch meals by category" });
   }
 };
 
-// ✅ Get meal/drink details by ID
+// ✅ Get meal by ID (for detailed recipe page)
+// ✅ Get meal by ID (for detailed recipe page)
 export const getMealById = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log("📡 Fetching meal by ID:", id);
 
-    // Try MealDB first
-    let url = `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`;
-    let response = await fetch(url);
-    let data = await response.json();
+    let meal;
 
-    let item = data.meals ? data.meals[0] : null;
-
-    // If not found in MealDB, try CocktailDB
-    if (!item) {
-      url = `https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=${id}`;
-      response = await fetch(url);
-      data = await response.json();
-      item = data.drinks ? data.drinks[0] : null;
+    // 🧠 Check if id is a valid Mongo ObjectId
+    if (/^[0-9a-fA-F]{24}$/.test(id)) {
+      meal = await Meal.findById(id);
     }
 
-    if (!item) {
-      return res.status(404).json({ message: "Meal/Drink not found" });
+    // 🟡 If not found or invalid ObjectId → try by idMeal
+    if (!meal) {
+      meal = await Meal.findOne({ idMeal: id });
     }
 
-    // Extract ingredients
-    const ingredients = [];
-    for (let i = 1; i <= 20; i++) {
-      const ingredient = item[`strIngredient${i}`];
-      const measure = item[`strMeasure${i}`];
-      if (ingredient) {
-        ingredients.push(`${ingredient} - ${measure || ""}`);
-      }
+    if (!meal) {
+      console.log("⚠️ No meal found for ID:", id);
+      return res.status(404).json({ message: "Meal not found in database" });
     }
 
-    // Map category names
-    const categoryMap = {
-      Vegetarian: "Veg",
-      Chicken: "Non-Veg",
-      Dessert: "Dessert",
-      Cocktail: "Drink",
-    };
+    // 🧹 Clean instructions
+    const cleanText = (meal.strInstructions || "")
+      .replace(/\r\n/g, "\n")
+      .replace(/\n{2,}/g, "\n\n")
+      .trim();
 
-    const rawCategory = item.strCategory || item.strAlcoholic || "Uncategorized";
-    const normalizedCategory = categoryMap[rawCategory] || "Uncategorized";
-
-    // ✅ Smart step/paragraph logic
-    let procedureSteps = [];
-    let procedureParagraphs = [];
-
-    if (item.strInstructions) {
-      const cleanText = item.strInstructions
-        .replace(/\r\n/g, "\n")
-        .replace(/\n{2,}/g, "\n\n")
-        .trim();
-
-      // 🧩 1️⃣ If numbered steps (1., 2., etc.)
-      if (/\d+\./.test(cleanText)) {
-        const parts = cleanText
-          .split(/\d+\.\s*/)
+    // 🪜 Split into readable steps
+    const procedureSteps = cleanText
+      ? cleanText
+          .split(/\n{2,}|\d+\.\s*|Step\s*\d+[:.\-]?\s*/i)
           .map((p) => p.trim())
-          .filter((p) => p.length > 3);
-        procedureParagraphs = parts;
-        procedureSteps = parts.map((p, i) => `Step ${i + 1}: ${p}`);
-      }
-      // 🧩 2️⃣ If "Step 1", "Step 2", etc.
-      else if (/Step\s*\d+/i.test(cleanText)) {
-        const parts = cleanText
-          .split(/Step\s*\d+[:.\-]?\s*/i)
-          .map((p) => p.trim())
-          .filter((p) => p.length > 3);
-        procedureParagraphs = parts;
-        procedureSteps = parts.map((p, i) => `Step ${i + 1}: ${p}`);
-      }
-      // 🧩 3️⃣ If blank lines (paragraph gaps)
-      else if (/\n{2,}/.test(cleanText)) {
-        const parts = cleanText
-          .split(/\n{2,}/)
-          .map((p) => p.trim())
-          .filter((p) => p.length > 3);
-        procedureParagraphs = parts;
-        procedureSteps = parts.map((p, i) => `Step ${i + 1}: ${p}`);
-      }
-      // 🧩 4️⃣ Else – group every 3 sentences
-      else {
-        const sentences = cleanText
-          .split(/(?<=[.!?])\s+/)
-          .map((s) => s.trim())
-          .filter((s) => s.length > 3);
-        for (let i = 0; i < sentences.length; i += 3) {
-          const chunk = sentences.slice(i, i + 3).join(" ");
-          procedureParagraphs.push(chunk);
-          procedureSteps.push(`Step ${procedureSteps.length + 1}: ${chunk}`);
-        }
-      }
-    }
+          .filter((p) => p.length > 3)
+          .map((p, i) => `Step ${i + 1}: ${p}`)
+      : [];
 
-    const dish = {
-      id: item.idMeal || item.idDrink,
-      name: item.strMeal || item.strDrink,
-      image: item.strMealThumb || item.strDrinkThumb,
-      procedure: item.strInstructions,
-      procedureParagraphs,
+    // ✅ Send formatted response
+    res.json({
+      id: meal._id,
+      idMeal: meal.idMeal,
+      name: meal.strMeal,
+      image: meal.strMealThumb,
+      category: meal.aiCategory,
+      ingredients: meal.ingredients || [],
+      procedure: meal.strInstructions || "",
       procedureSteps,
-      ingredients,
-      category: normalizedCategory,
-    };
-
-    res.json(dish);
+      avgRating: meal.avgRating?.toFixed(1) || "3.0",
+      totalRatings: meal.totalRatings || 1,
+      area: meal.strArea,
+      youtube: meal.strYoutube,
+    });
   } catch (err) {
-    console.error("Meal Detail API Error:", err.message);
+    console.error("❌ Error fetching meal details:", err.message);
     res.status(500).json({ message: "Failed to fetch meal details" });
+  }
+};
+
+
+// ✅ Get all unique AI categories (for dropdowns or filters)
+export const getAllCategories = async (req, res) => {
+  try {
+    const categories = await Meal.distinct("aiCategory");
+    console.log("📚 Available categories:", categories.length);
+    res.json(categories);
+  } catch (err) {
+    console.error("❌ Error fetching categories:", err.message);
+    res.status(500).json({ message: "Failed to fetch categories" });
   }
 };

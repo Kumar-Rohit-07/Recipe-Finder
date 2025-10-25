@@ -3,23 +3,25 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import LandingPage from "./pages/LandingPage";
-import Card from "./pages/Card";
+import Card from "./pages/card";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
-import Details from "./pages/details";  // ✅ Dish details page
-import Guide from "./pages/Guide";      // ✅ Import Guide page
+import Details from "./pages/details";
+import Guide from "./pages/Guide";
+import Countries from "./pages/Countries";
+import IngredientsPage from "./pages/IngredientsPage"; // ✅ NEW import
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public Routes */}
+          {/* 🌍 Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 
-          {/* 🔒 Dynamic card page by category */}
+          {/* 🔒 Protected Routes */}
           <Route
             path="/card/:category"
             element={
@@ -29,7 +31,15 @@ function App() {
             }
           />
 
-          {/* 🔒 Dish details page */}
+          <Route
+            path="/countries"
+            element={
+              <ProtectedRoute>
+                <Countries />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/meal/:id"
             element={
@@ -39,12 +49,21 @@ function App() {
             }
           />
 
-          {/* 🔒 Guide page (step-by-step cooking) */}
           <Route
             path="/guide/:id"
             element={
               <ProtectedRoute>
                 <Guide />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ✅ Ingredients-based search page */}
+          <Route
+            path="/ingredients"
+            element={
+              <ProtectedRoute>
+                <IngredientsPage />
               </ProtectedRoute>
             }
           />
