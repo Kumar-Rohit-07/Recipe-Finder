@@ -1,12 +1,20 @@
+// routes/mealRoutes.js
 import express from "express";
-import { getMealsByCategory, getMealById } from "../controllers/mealController.js";
+import {
+  getMealsByCategory,
+  getMealById,
+  getAllCategories,
+} from "../controllers/mealController.js";
 
 const router = express.Router();
 
-// ✅ Get meals by category
+// 📦 Get all categories for frontend dropdowns
+router.get("/categories", getAllCategories);
+
+// 📦 Get meals by category
 router.get("/category/:category", getMealsByCategory);
 
-// ✅ Get a single meal by ID
-router.get("/meal/:id", getMealById);
+// 📦 Get meal by ID
+router.get("/:id", getMealById);
 
 export default router;
