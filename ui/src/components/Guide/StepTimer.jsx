@@ -1,11 +1,8 @@
 // src/components/Guide/StepTimer.jsx
 import React, { useState, useEffect, useRef } from "react";
-import {
-  startTimer,
-  adjustTimer,
-  calculateAdjustedTime,
-} from "../../utils/timerLogic";
+import { startTimer, adjustTimer, calculateAdjustedTime } from "../../utils/timerLogic";
 import TimerDisplay from "./Timerdisplay";
+import { Play, Pause } from "lucide-react"; // Icon import
 
 const flameColors = {
   Low: "bg-blue-500",
@@ -13,16 +10,13 @@ const flameColors = {
   High: "bg-red-600",
 };
 
-const StepTimer = ({ baseTimeMinutes = 5, initialFlame = "Medium" }) => {
+const StepTimer = ({ baseTimeMinutes = 5, initialFlame = "Medium", stepChanged }) => {
   const [flame, setFlame] = useState(initialFlame);
-  const [remaining, setRemaining] = useState(
-    calculateAdjustedTime(baseTimeMinutes, initialFlame)
-  );
+  const [remaining, setRemaining] = useState(calculateAdjustedTime(baseTimeMinutes, initialFlame));
   const [elapsed, setElapsed] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef(null);
 
-  // 🔊 Beep when timer ends
   const playBeep = () => {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -40,22 +34,16 @@ const StepTimer = ({ baseTimeMinutes = 5, initialFlame = "Medium" }) => {
     }
   };
 
-  // 🕒 Auto-start or reset when step/time changes
+  // Reset timer when step changes
   useEffect(() => {
-    if (!baseTimeMinutes || baseTimeMinutes <= 0) {
-      // no timer for this step
-      if (intervalRef.current) intervalRef.current();
-      setIsRunning(false);
-      setRemaining(0);
-      return;
-    }
+    if (!baseTimeMinutes || baseTimeMinutes <= 0) return;
 
-    // stop any old timer
-    if (intervalRef.current) intervalRef.current();
+    if (intervalRef.current) intervalRef.current(); // stop old timer
 
-    const initialTime = calculateAdjustedTime(baseTimeMinutes, flame);
+    const initialTime = calculateAdjustedTime(baseTimeMinutes, initialFlame);
     setRemaining(initialTime);
     setElapsed(0);
+    setFlame(initialFlame);
     setIsRunning(true);
 
     intervalRef.current = startTimer(
@@ -79,9 +67,9 @@ const StepTimer = ({ baseTimeMinutes = 5, initialFlame = "Medium" }) => {
     return () => {
       if (intervalRef.current) intervalRef.current();
     };
-  }, [baseTimeMinutes, flame]);
+  }, [stepChanged, baseTimeMinutes, initialFlame]);
 
-  // 🔥 Adjust flame dynamically
+  // Handle flame changes dynamically
   const handleFlameChange = (newFlame) => {
     if (!isRunning || remaining <= 0) return;
     if (intervalRef.current) intervalRef.current();
@@ -110,7 +98,33 @@ const StepTimer = ({ baseTimeMinutes = 5, initialFlame = "Medium" }) => {
     );
   };
 
-  // Hide timer if no time required
+  // Pause/Resume handler
+  const handlePauseResume = () => {
+    if (!isRunning) {
+      setIsRunning(true);
+      intervalRef.current = startTimer(
+        remaining,
+        (r) => {
+          setRemaining(r);
+          setElapsed((prev) => prev + 1);
+          if (r <= 0) {
+            setIsRunning(false);
+            playBeep();
+            alert("⏰ Time’s up! Check your dish now.");
+          }
+        },
+        () => {
+          setIsRunning(false);
+          playBeep();
+          alert("⏰ Time’s up! Check your dish now.");
+        }
+      );
+    } else {
+      if (intervalRef.current) intervalRef.current();
+      setIsRunning(false);
+    }
+  };
+
   if (!baseTimeMinutes || baseTimeMinutes <= 0) return null;
 
   return (
@@ -125,14 +139,8 @@ const StepTimer = ({ baseTimeMinutes = 5, initialFlame = "Medium" }) => {
               onClick={() => handleFlameChange(level)}
               disabled={!isRunning || remaining <= 0}
               className={`px-3 py-1 text-sm rounded-lg font-semibold transition-all ${
-                flame === level
-                  ? `${flameColors[level]} scale-105`
-                  : "bg-gray-700 hover:bg-gray-600"
-              } ${
-                !isRunning || remaining <= 0
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
+                flame === level ? `${flameColors[level]} scale-105` : "bg-gray-700 hover:bg-gray-600"
+              } ${!isRunning || remaining <= 0 ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               {level}
             </button>
@@ -140,14 +148,18 @@ const StepTimer = ({ baseTimeMinutes = 5, initialFlame = "Medium" }) => {
         </div>
       </div>
 
-      {/* Timer Display */}
-      <TimerDisplay remaining={remaining} />
+      {/* Timer + Pause/Play Icon */}
+      <div className="flex items-center justify-center mt-2 gap-2">
+        <TimerDisplay remaining={remaining} />
+        <button onClick={handlePauseResume} className="text-white hover:text-yellow-400 transition">
+          {isRunning ? <Pause size={20} /> : <Play size={20} />}
+        </button>
+      </div>
 
       <p className="text-center text-sm text-gray-400 mt-2">
         Base time: {baseTimeMinutes} min | Flame: {flame}
       </p>
 
-      {/* 💬 More visible disclaimer */}
       <p className="text-center text-xs italic text-cyan-400 mt-3">
         ⏱ Estimated time — check color, texture & aroma for doneness.
       </p>
