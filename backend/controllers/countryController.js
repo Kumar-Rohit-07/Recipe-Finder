@@ -23,7 +23,7 @@ export const getDishesByCountry = async (req, res) => {
       return res.status(404).json({ message: "No dishes found for this selection." });
     }
 
-    // ⭐ Recommended logic: first 5 items if total > 5
+    // ⭐ Recommended logic
     const recommended = dishes.length > 5 ? dishes.slice(0, 5) : [];
 
     // ✅ Respond
@@ -36,6 +36,29 @@ export const getDishesByCountry = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching dishes:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// ✅ Fetch Random Dishes (for default view when "All" is selected)
+export const getRandomDishes = async (req, res) => {
+  try {
+    // Fetch 20 random dishes
+    const allDishes = await Meal.aggregate([{ $sample: { size: 20 } }]);
+
+    // Top 5 recommended based on rating
+    const recommended = [...allDishes]
+      .filter((m) => m.avgRating)
+      .sort((a, b) => b.avgRating - a.avgRating)
+      .slice(0, 5);
+
+    res.status(200).json({
+      totalDishes: allDishes.length,
+      recommended,
+      allDishes,
+    });
+  } catch (error) {
+    console.error("Error fetching random dishes:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };

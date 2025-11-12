@@ -89,6 +89,7 @@ export const getMealById = async (req, res) => {
       image: meal.strMealThumb,
       category: meal.aiCategory,
       ingredients: meal.ingredients || [],
+      measures: meal.measures || [],
       procedure: meal.strInstructions || "",
       procedureSteps,
       avgRating: meal.avgRating?.toFixed(1) || "3.0",
