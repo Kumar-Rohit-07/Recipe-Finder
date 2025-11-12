@@ -33,7 +33,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 backdrop-blur-3xl bg-white/10 border-b border-white/20 shadow-md">
+    <nav className="fixed top-0 left-0 w-full z-50 backdrop-blur-3xl bg-white/10 border-b border-white/20 shadow-md py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-3 py-3">
         <Link to="/" className="text-2xl font-bold text-white">🍴 Recipe Finder</Link>
 
@@ -49,6 +49,7 @@ const Navbar = () => {
           ))}
         </div>
 
+        {/* Right side: Auth buttons or profile */}
         <div className="flex items-center relative">
           {!user ? (
             <>
@@ -67,14 +68,25 @@ const Navbar = () => {
             </>
           ) : (
             <div className="relative">
+              {/* Avatar or default icon */}
               <div
-                className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center cursor-pointer"
+                className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center cursor-pointer overflow-hidden border border-white/30 m-0"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
               >
-                <span className="text-xl">👤</span>
+                {user.profilePic ? (
+                  <img
+                    src={`http://localhost:5000${user.profilePic}`}
+                    alt="Profile"
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  <span className="text-xl">👤</span>
+                )}
               </div>
+
+              {/* Dropdown */}
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-white/20 backdrop-blur-lg rounded-lg shadow-lg py-2 flex flex-col">
+                <div className="absolute right-0 mt-2 w-40 bg-white/20 backdrop-blur-lg rounded-lg shadow-lg py-2 flex flex-col border border-white/30">
                   <button
                     onClick={() => {
                       navigate("/profile");

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import StepTimer from "../components/Guide/StepTimer"; // ✅ Timer import
+import StepTimer from "../components/Guide/StepTimer";
 
 const Guide = () => {
   const { id } = useParams();
@@ -62,7 +62,7 @@ const Guide = () => {
     fetchGuide();
   }, [id]);
 
-  // ✅ Translate current step
+  // ✅ Translate step
   useEffect(() => {
     if (language === "English" || steps.length === 0) return;
 
@@ -87,8 +87,7 @@ const Guide = () => {
         );
         updatedSteps[currentStep][language] = res.data.translatedText;
         setSteps(updatedSteps);
-      } catch (err) {
-        console.error("Translation error:", err);
+      } catch {
         updatedSteps[currentStep][language] = "Translation unavailable";
         setSteps(updatedSteps);
       } finally {
@@ -98,7 +97,7 @@ const Guide = () => {
     translateCurrentStep();
   }, [language, currentStep, steps]);
 
-  // ✅ Fetch AI Tip
+  // ✅ AI Tip
   useEffect(() => {
     const fetchTip = async () => {
       const stepText = steps[currentStep]?.en?.trim();
@@ -128,7 +127,7 @@ const Guide = () => {
     fetchTip();
   }, [currentStep, steps, language]);
 
-  // ✅ Fetch AI Timer + Flame for each step
+  // ✅ Timer
   useEffect(() => {
     const analyzeStep = async () => {
       const stepText = steps[currentStep]?.en?.trim();
@@ -140,24 +139,19 @@ const Guide = () => {
       try {
         const res = await axios.post(
           "http://localhost:5000/api/timer/analyze-step",
-          {
-            stepText,
-            language,
-          },
+          { stepText, language },
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
           }
         );
-
         const timeValue = Number(res.data.estimated_time);
         setTimerData({
           estimated_time: !isNaN(timeValue) && timeValue > 0 ? timeValue : null,
           flame_level: res.data.flame_level || "Medium",
         });
-      } catch (err) {
-        console.error("Timer analysis error:", err);
+      } catch {
         setTimerData({ estimated_time: null, flame_level: null });
       }
     };
@@ -178,30 +172,39 @@ const Guide = () => {
   const stepData = steps[currentStep] || {};
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 via-yellow-50 to-white flex flex-col items-center p-6 relative">
+    <div className="min-h-screen bg-gradient-to-b from-orange-50 via-yellow-50 to-white flex flex-col items-center p-4 sm:p-6 relative">
+      {/* 🔙 Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="fixed top-4 left-4 z-50 text-black text-2xl sm:text-3xl bg-white/60 hover:bg-black/10 backdrop-blur-md px-3 py-1 sm:px-4 sm:py-2 rounded-full transition shadow-md"
+      >
+        ←
+      </button>
+
+      {/* Timer (Mobile moves below header) */}
       {timerData.estimated_time !== null && (
-        <div className="absolute top-0 right-0 z-50">
+        <div className="absolute top-14 sm:top-0 right-4 sm:right-0 z-40 scale-90 sm:scale-100">
           <StepTimer
             baseTimeMinutes={timerData.estimated_time}
             initialFlame={timerData.flame_level}
-            stepChanged={currentStep} // ✅ Add this prop
+            stepChanged={currentStep}
           />
         </div>
       )}
 
-
-      <h1 className="text-3xl md:text-4xl font-bold mb-6 text-purple-800 text-center">
+      <h1 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6 text-purple-800 text-center mt-14 sm:mt-10 leading-tight px-4">
         {dish.name} - Cooking Guide
       </h1>
 
-      <div className="mb-4">
-        <label className="mr-2 font-semibold text-gray-800">
+      {/* Language Selector */}
+      <div className="mb-4 text-sm sm:text-base flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+        <label className="font-semibold text-gray-800">
           Select Language:
         </label>
         <select
           value={language}
           onChange={(e) => handleLanguageChange(e.target.value)}
-          className="px-2 py-1 rounded border border-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
+          className="px-2 py-1 rounded border border-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm sm:text-base"
         >
           {languages.map((lang) => (
             <option key={lang.value} value={lang.value}>
@@ -210,49 +213,56 @@ const Guide = () => {
           ))}
         </select>
         {translating && (
-          <span className="ml-2 text-gray-600 italic">Translating...</span>
+          <span className="text-gray-600 italic text-xs sm:text-sm">
+            Translating...
+          </span>
         )}
       </div>
 
-      <div className="w-full md:max-w-5xl lg:max-w-6xl bg-white rounded-2xl shadow-lg p-8 border border-gray-100 transition-all duration-300 hover:shadow-xl">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+      {/* Step Card */}
+      <div className="w-full max-w-3xl sm:max-w-5xl bg-white rounded-2xl shadow-lg p-5 sm:p-8 border border-gray-100 transition-all duration-300 hover:shadow-xl">
+        <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-gray-800">
           Step {currentStep + 1}
         </h2>
 
-        <p className="text-gray-800 font-medium leading-relaxed mb-4">
+        <p className="text-gray-800 font-medium leading-relaxed mb-4 text-sm sm:text-base">
           {stepData.en}
         </p>
 
         {language !== "English" && (
-          <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-xl shadow-sm">
-            <h3 className="text-indigo-800 font-semibold mb-2">
+          <div className="mt-4 p-3 sm:p-4 bg-indigo-50 border border-indigo-200 rounded-xl shadow-sm">
+            <h3 className="text-indigo-800 font-semibold mb-2 text-sm sm:text-base">
               Translation ({language})
             </h3>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+            <p className="text-gray-700 leading-relaxed whitespace-pre-line text-sm sm:text-base">
               {stepData[language] || "Translation unavailable"}
             </p>
           </div>
         )}
 
-        <div className="mt-6 p-4 bg-yellow-50 border-l-4 border-orange-400 rounded-lg shadow-sm transition-all duration-300">
-          <h3 className="text-orange-700 font-semibold mb-1">
+        {/* AI Tip */}
+        <div className="mt-5 sm:mt-6 p-3 sm:p-4 bg-yellow-50 border-l-4 border-orange-400 rounded-lg shadow-sm">
+          <h3 className="text-orange-700 font-semibold mb-1 text-sm sm:text-base">
             💡 SMART Cooking Tip
           </h3>
           {loadingTip ? (
-            <p className="text-gray-500 italic">Generating tip...</p>
+            <p className="text-gray-500 italic text-sm sm:text-base">
+              Generating tip...
+            </p>
           ) : (
-            <p className="text-gray-800 leading-relaxed italic">
+            <p className="text-gray-800 leading-relaxed italic text-sm sm:text-base">
               {aiTip || "Tip unavailable"}
             </p>
           )}
         </div>
       </div>
 
-      <div className="flex gap-4 mt-6">
+      {/* Navigation Buttons */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 w-full max-w-md justify-center">
         <button
           onClick={() => setCurrentStep((prev) => prev - 1)}
           disabled={currentStep === 0}
-          className={`px-6 py-2 rounded-lg font-semibold shadow-md transition ${
+          className={`px-6 py-2 rounded-lg font-semibold shadow-md transition text-sm sm:text-base ${
             currentStep === 0
               ? "bg-gray-300 cursor-not-allowed"
               : "bg-gray-600 text-white hover:bg-gray-700"
@@ -264,21 +274,21 @@ const Guide = () => {
         {currentStep < steps.length - 1 ? (
           <button
             onClick={() => setCurrentStep((prev) => prev + 1)}
-            className="px-6 py-2 bg-orange-500 text-white rounded-lg font-semibold shadow-md hover:bg-orange-600 transition"
+            className="px-6 py-2 bg-orange-500 text-white rounded-lg font-semibold shadow-md hover:bg-orange-600 transition text-sm sm:text-base"
           >
             Next
           </button>
         ) : (
           <button
             onClick={() => navigate(`/meal/${id}`)}
-            className="px-6 py-2 bg-green-500 text-white rounded-lg font-semibold shadow-md hover:bg-green-600 transition"
+            className="px-6 py-2 bg-green-500 text-white rounded-lg font-semibold shadow-md hover:bg-green-600 transition text-sm sm:text-base"
           >
             Finish
           </button>
         )}
       </div>
 
-      <div className="mt-4 text-gray-700 font-medium">
+      <div className="mt-4 text-gray-700 font-medium text-sm sm:text-base">
         Step {currentStep + 1} of {steps.length}
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { motion, AnimatePresence } from "framer-motion"; // ✅ for animation
+import signupBg from "../assets/signupimg.png";
 
 const Login = () => {
   const { login } = useAuth();
@@ -38,6 +39,13 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center relative bg-[radial-gradient(circle_at_center,_#414D85,_#191F40)] text-white">
       <Navbar />
+
+      {/* Background image */}
+      <img
+        src={signupBg}
+        alt="decor"
+        className="absolute inset-0 w-full h-full object-cover opacity-60 z-0 pointer-events-none"
+      />
 
       {/* Login Form */}
       <div className="relative z-10 backdrop-blur-lg bg-white/10 p-10 rounded-2xl shadow-2xl border border-white/20 w-96 flex flex-col">

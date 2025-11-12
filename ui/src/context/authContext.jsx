@@ -12,12 +12,38 @@ export const AuthProvider = ({ children }) => {
     const storedUser = localStorage.getItem("user");
     return storedUser ? JSON.parse(storedUser) : null;
   });
+
   const [token, setToken] = useState(() => localStorage.getItem("token") || null);
   const [loading, setLoading] = useState(false);
 
+  // ✅ Keep localStorage synced when user changes
   useEffect(() => {
-    if (!token) setUser(null);
+    if (user) localStorage.setItem("user", JSON.stringify(user));
+  }, [user]);
+
+  // ✅ If token removed → logout user
+  useEffect(() => {
+    if (!token) {
+      setUser(null);
+      localStorage.removeItem("user");
+    }
   }, [token]);
+
+  // 🧠 Sync updated profile from backend (especially for profilePic)
+  const refreshUserProfile = async () => {  // 🆕
+    if (!token) return;
+    try {
+      const res = await axios.get("http://localhost:5000/api/user/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.data) {
+        setUser(res.data);
+        localStorage.setItem("user", JSON.stringify(res.data));
+      }
+    } catch (err) {
+      console.error("❌ Failed to refresh user profile:", err.message);
+    }
+  };
 
   // Signup
   const signup = async (name, username, email, password) => {
@@ -36,6 +62,8 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const res = await axios.post(`${API_URL}/login`, { email, password });
+
+      // 🆕 backend should now return { token, user: { ... , profilePic } }
       const { token, user } = res.data;
 
       localStorage.setItem("token", token);
@@ -61,7 +89,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, signup, logout, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        setUser,
+        token,
+        login,
+        signup,
+        logout,
+        loading,
+        refreshUserProfile, // 🆕 expose function so you can re-sync after profile upload
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

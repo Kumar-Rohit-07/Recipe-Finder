@@ -9,7 +9,7 @@ const DishList = ({ recommended = [], allDishes = [] }) => {
           <h2 className="text-2xl font-bold mb-4">⭐ Recommended</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {recommended.map(dish => (
-              <DishCard key={dish.idMeal} dish={dish} />
+              <DishCard key={dish._id} dish={dish} />
             ))}
           </div>
         </div>
@@ -19,7 +19,7 @@ const DishList = ({ recommended = [], allDishes = [] }) => {
         <h2 className="text-2xl font-bold mb-4">🍽 All Dishes</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {allDishes.map(dish => (
-            <DishCard key={dish.idMeal} dish={dish} />
+            <DishCard key={dish._id} dish={dish} />
           ))}
         </div>
       </div>
