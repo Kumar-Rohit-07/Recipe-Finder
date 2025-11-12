@@ -44,7 +44,13 @@ const server = createServer(app);
 app.use(express.json());
 
 // ✅ CORS
-const allowedOrigins = ["http://localhost:5173", "http://localhost:5174"];
+// ✅ CORS
+const allowedOrigins = [
+  process.env.FRONTEND_URL, // <-- your deployed Vercel frontend
+  "http://localhost:5173",  // <-- for local dev
+  "http://localhost:5174",  // <-- optional (if you used another port)
+];
+
 app.use(
   cors({
     origin: allowedOrigins,
@@ -53,6 +59,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 
 // ✅ Static file serving
 // Existing static folders
