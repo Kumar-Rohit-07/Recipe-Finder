@@ -1,7 +1,7 @@
 // src/components/Guide/StepTimer.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { startTimer, adjustTimer, calculateAdjustedTime } from "../../utils/timerLogic";
-import TimerDisplay from "./Timerdisplay";
+import TimerDisplay from "./TimerDisplay";
 import { Play, Pause } from "lucide-react"; // Icon import
 
 const flameColors = {
